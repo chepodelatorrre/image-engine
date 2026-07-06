@@ -1,10 +1,11 @@
 const express = require("express");
 const OpenAI = require("openai");
+const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "20mb" }));
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -26,10 +27,16 @@ app.post("/enhance", async (req, res) => {
       });
     }
 
+    const response = await axios.get(image_url, {
+      responseType: "arraybuffer"
+    });
+
+    const imageBuffer = Buffer.from(response.data);
+
     res.json({
       success: true,
-      message: "Imagen recibida correctamente",
-      image_url: image_url
+      message: "Imagen descargada correctamente",
+      size: imageBuffer.length
     });
 
   } catch (error) {
