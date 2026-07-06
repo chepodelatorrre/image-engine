@@ -17,9 +17,19 @@ app.get("/", (req, res) => {
 app.post("/enhance", async (req, res) => {
   try {
 
+    const { image_url } = req.body;
+
+    if (!image_url) {
+      return res.status(400).json({
+        success: false,
+        error: "Falta image_url"
+      });
+    }
+
     res.json({
       success: true,
-      message: "OpenAI conectado correctamente"
+      message: "Imagen recibida correctamente",
+      image_url: image_url
     });
 
   } catch (error) {
