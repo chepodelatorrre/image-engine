@@ -19,9 +19,34 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-console.log("Cloud:", process.env.CLOUDINARY_CLOUD_NAME);
-console.log("Key:", process.env.CLOUDINARY_API_KEY);
-console.log("Secret:", process.env.CLOUDINARY_API_SECRET ? "OK" : "NO");
+/* ===========================
+   IMAGE ENGINE CONFIGURATION
+=========================== */
+
+const CONFIG = {
+
+  MODEL: "gpt-image-1",
+
+  ENHANCE_PROMPT:
+    "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result.",
+
+  VALID_MODES: [
+    "enhance",
+    "generate",
+    "branding"
+  ],
+
+  CLOUDINARY_FOLDER: "AI/Enhanced",
+
+  INPUT_FILENAME: "photo.jpg",
+
+  INPUT_MIME_TYPE: "image/jpeg",
+
+  OUTPUT_FORMAT: "png",
+
+  OUTPUT_QUALITY: "high"
+
+};
 
 app.get("/", (req, res) => {
   res.send("Image Engine funcionando");
@@ -30,7 +55,10 @@ app.get("/", (req, res) => {
 app.post("/enhance", async (req, res) => {
   try {
 
-    const { image_url } = req.body;
+const {
+  image_url,
+  mode = "enhance"
+} = req.body;
 
     if (!image_url) {
       return res.status(400).json({
@@ -43,37 +71,28 @@ app.post("/enhance", async (req, res) => {
       responseType: "arraybuffer"
     });
 
-    const imageBuffer = Buffer.from(response.data);
-const imageFile = await toFile(
+  const imageBuffer = Buffer.from(response.data);
+
+  const imageFile = await toFile(
   imageBuffer,
-  "photo.jpg",
+  CONFIG.INPUT_FILENAME,
   {
-    type: "image/jpeg"
+    type: CONFIG.INPUT_MIME_TYPE
   }
 );
 
-console.log("1. Enviando imagen a OpenAI...");
-
   const result = await client.images.edit({
-  model: "gpt-image-1",
+  model: CONFIG.MODEL,
   image: imageFile,
-  prompt: "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result."
+  prompt: CONFIG.ENHANCE_PROMPT,
 });
-
-console.log("2. OpenAI respondió.");
-
-console.log(result);
-
-console.log("3. Subiendo imagen a Cloudinary...");
 
 const uploadResult = await cloudinary.uploader.upload(
   `data:image/png;base64,${result.data[0].b64_json}`,
   {
-    folder: "AI/Enhanced"
+    folder: CONFIG.CLOUDINARY_FOLDER
   }
 );
-
-console.log("4. Cloudinary OK:", uploadResult.secure_url);
 
 res.json({
   success: true,
