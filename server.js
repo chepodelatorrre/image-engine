@@ -46,6 +46,7 @@ const imageFile = await toFile(
   image: imageFile,
   prompt: "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result."
 });
+console.log(result);
 
 res.json({
   success: true,
