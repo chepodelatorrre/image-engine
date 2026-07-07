@@ -1,5 +1,6 @@
 const express = require("express");
 const OpenAI = require("openai");
+const { toFile } = require("openai/uploads");
 const axios = require("axios");
 require("dotenv").config();
 
@@ -32,10 +33,17 @@ app.post("/enhance", async (req, res) => {
     });
 
     const imageBuffer = Buffer.from(response.data);
+const imageFile = await toFile(
+  imageBuffer,
+  "photo.jpg",
+  {
+    type: "image/jpeg"
+  }
+);
 
   const result = await client.images.edit({
   model: "gpt-image-1",
-  image: imageBuffer,
+  image: imageFile,
   prompt: "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result."
 });
 
