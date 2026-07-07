@@ -60,6 +60,13 @@ const {
   mode = "enhance"
 } = req.body;
 
+if (!CONFIG.VALID_MODES.includes(mode)) {
+  return res.status(400).json({
+    success: false,
+    error: "Modo no válido"
+  });
+}
+
     if (!image_url) {
       return res.status(400).json({
         success: false,
@@ -102,9 +109,12 @@ res.json({
   } catch (error) {
 
     res.status(500).json({
-      success: false,
-      error: error.message
-    });
+  success: false,
+  error: {
+    code: "INTERNAL_ERROR",
+    message: error.message
+  }
+});
 
   }
 });
