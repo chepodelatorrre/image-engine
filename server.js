@@ -48,12 +48,19 @@ const imageFile = await toFile(
   }
 );
 
+console.log("1. Enviando imagen a OpenAI...");
+
   const result = await client.images.edit({
   model: "gpt-image-1",
   image: imageFile,
   prompt: "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result."
 });
+
+console.log("2. OpenAI respondió.");
+
 console.log(result);
+
+console.log("3. Subiendo imagen a Cloudinary...");
 
 const uploadResult = await cloudinary.uploader.upload(
   `data:image/png;base64,${result.data[0].b64_json}`,
@@ -61,6 +68,8 @@ const uploadResult = await cloudinary.uploader.upload(
     folder: "AI/Enhanced"
   }
 );
+
+console.log("4. Cloudinary OK:", uploadResult.secure_url);
 
 res.json({
   success: true,
