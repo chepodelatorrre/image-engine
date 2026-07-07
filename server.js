@@ -33,11 +33,16 @@ app.post("/enhance", async (req, res) => {
 
     const imageBuffer = Buffer.from(response.data);
 
-    res.json({
-      success: true,
-      message: "Imagen descargada correctamente",
-      size: imageBuffer.length
-    });
+  const result = await client.images.edit({
+  model: "gpt-image-1",
+  image: imageBuffer,
+  prompt: "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result."
+});
+
+res.json({
+  success: true,
+  result
+});
 
   } catch (error) {
 
