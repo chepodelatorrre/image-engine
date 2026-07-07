@@ -103,8 +103,7 @@ const uploadResult = await cloudinary.uploader.upload(
 
 res.json({
   success: true,
-  image_url: uploadResult.secure_url,
-  public_id: uploadResult.public_id
+  image_url: uploadResult.secure_url
 });
 
   } catch (error) {
