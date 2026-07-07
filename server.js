@@ -19,6 +19,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+console.log("Cloud:", process.env.CLOUDINARY_CLOUD_NAME);
+console.log("Key:", process.env.CLOUDINARY_API_KEY);
+console.log("Secret:", process.env.CLOUDINARY_API_SECRET ? "OK" : "NO");
+
 app.get("/", (req, res) => {
   res.send("Image Engine funcionando");
 });
