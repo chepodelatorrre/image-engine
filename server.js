@@ -1,6 +1,7 @@
 const express = require("express");
 const OpenAI = require("openai");
 const { toFile } = require("openai/uploads");
+const { v2: cloudinary } = require("cloudinary");
 const axios = require("axios");
 require("dotenv").config();
 
@@ -10,6 +11,12 @@ app.use(express.json({ limit: "20mb" }));
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 app.get("/", (req, res) => {
@@ -48,9 +55,16 @@ const imageFile = await toFile(
 });
 console.log(result);
 
+const uploadResult = await cloudinary.uploader.upload(
+  `data:image/png;base64,${result.data[0].b64_json}`,
+  {
+    folder: "AI/Enhanced"
+  }
+);
+
 res.json({
   success: true,
-  result
+  image_url: uploadResult.secure_url
 });
 
   } catch (error) {
