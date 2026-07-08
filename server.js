@@ -80,6 +80,8 @@ if (!CONFIG.VALID_MODES.includes(mode)) {
       responseType: "arraybuffer"
     });
 
+    console.log("Imagen descargada");
+
   const imageBuffer = Buffer.from(response.data);
 
   const imageFile = await toFile(
@@ -96,12 +98,18 @@ if (!CONFIG.VALID_MODES.includes(mode)) {
   prompt: CONFIG.ENHANCE_PROMPT,
 });
 
+console.log("OpenAI completado");
+
 const uploadResult = await cloudinary.uploader.upload(
   `data:image/png;base64,${result.data[0].b64_json}`,
   {
     folder: CONFIG.CLOUDINARY_FOLDER
   }
 );
+
+console.log("Cloudinary completado");
+
+console.log("Respuesta enviada");
 
 res.json({
   success: true,
