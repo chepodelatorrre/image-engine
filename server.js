@@ -53,7 +53,9 @@ app.get("/", (req, res) => {
 });
 
 app.post("/enhance", async (req, res) => {
-  try {
+  console.log("POST /enhance recibido");  
+
+try {
 
 const {
   image_url,
