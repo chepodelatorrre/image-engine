@@ -53,7 +53,13 @@ app.get("/", (req, res) => {
 });
 
 app.post("/enhance", async (req, res) => {
-  console.log("POST /enhance recibido");  
+const start = Date.now();
+
+const logTime = (mensaje) => {
+  console.log(`${Date.now() - start} ms | ${mensaje}`);
+};
+
+logTime("POST /enhance recibido");
 
 try {
 
@@ -80,7 +86,7 @@ if (!CONFIG.VALID_MODES.includes(mode)) {
       responseType: "arraybuffer"
     });
 
-    console.log("Imagen descargada");
+    logTime("Imagen descargada");
 
   const imageBuffer = Buffer.from(response.data);
 
@@ -98,7 +104,7 @@ if (!CONFIG.VALID_MODES.includes(mode)) {
   prompt: CONFIG.ENHANCE_PROMPT,
 });
 
-console.log("OpenAI completado");
+logTime("OpenAI completado");
 
 const uploadResult = await cloudinary.uploader.upload(
   `data:image/png;base64,${result.data[0].b64_json}`,
@@ -107,9 +113,9 @@ const uploadResult = await cloudinary.uploader.upload(
   }
 );
 
-console.log("Cloudinary completado");
+logTime("Cloudinary completado");
 
-console.log("Respuesta enviada");
+logTime("Respuesta enviada");
 
 res.json({
   success: true,
