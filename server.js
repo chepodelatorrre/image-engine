@@ -27,8 +27,17 @@ const CONFIG = {
 
   MODEL: "gpt-image-1",
 
-  ENHANCE_PROMPT:
-    "Improve the lighting, sharpness and colors while preserving the original photograph. Keep the same composition, people and identity. Produce a realistic high-quality result.",
+ENHANCE_PROMPT: `
+Improve the photographic quality while preserving the original image exactly.
+
+Never modify the identity, facial features, age, expression or body of any person.
+
+Never add, remove or replace objects or scenery.
+
+Improve only lighting, exposure, dynamic range, white balance, sharpness, noise reduction and natural colors.
+
+The output must remain a realistic professional photograph with no AI-generated appearance.
+`,
 
   VALID_MODES: [
     "enhance",
