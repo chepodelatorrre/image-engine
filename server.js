@@ -129,26 +129,23 @@ app.post("/enhance", async (req, res) => {
 
       logTime("Procesamiento iniciado");
 
-      const response = await axios.get(image_url, {
-  responseType: "arraybuffer",
-  timeout: 10000,
-  maxRedirects: 10,
+      const response = await fetch(image_url, {
+  redirect: "follow",
   headers: {
     "User-Agent": "Mozilla/5.0"
-  },
-  validateStatus: () => true
+  }
 });
 
 logTime(`Descarga HTTP status ${response.status}`);
-logTime(`Descarga HTTP content-type ${response.headers["content-type"]}`);
+logTime(`Descarga HTTP content-type ${response.headers.get("content-type")}`);
 
-if (response.status !== 200) {
+if (!response.ok) {
   throw new Error(`Descarga de imagen falló con HTTP ${response.status}`);
 }
 
-      logTime("Imagen descargada");
+const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-      const imageBuffer = Buffer.from(response.data);
+logTime("Imagen descargada");
 
       const imageFile = await toFile(
         imageBuffer,
