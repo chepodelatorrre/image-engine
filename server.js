@@ -130,9 +130,17 @@ app.post("/enhance", async (req, res) => {
       logTime("Procesamiento iniciado");
 
       const response = await axios.get(image_url, {
-        responseType: "arraybuffer",
-        timeout: 10000
-      });
+  responseType: "arraybuffer",
+  timeout: 10000,
+  validateStatus: () => true
+});
+
+logTime(`Descarga HTTP status ${response.status}`);
+logTime(`Descarga HTTP content-type ${response.headers["content-type"]}`);
+
+if (response.status !== 200) {
+  throw new Error(`Descarga de imagen falló con HTTP ${response.status}`);
+}
 
       logTime("Imagen descargada");
 
