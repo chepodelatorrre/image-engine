@@ -20,7 +20,7 @@ cloudinary.config({
 });
 
 /* ===========================
-   IMAGE ENGINE CONFIGURATION
+IMAGE ENGINE CONFIGURATION
 =========================== */
 
 const CONFIG = {
@@ -58,13 +58,50 @@ The output must remain a realistic professional photograph with no AI-generated 
 };
 
 /* ===========================
-   TEMPORARY JOB STORAGE
+TEMPORARY JOB STORAGE
 =========================== */
 
 const jobs = new Map();
 
 /* ===========================
-   HEALTH CHECK
+MAKE WEBHOOK NOTIFICATION
+=========================== */
+
+const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
+
+async function notifyMake(jobId, status, imageUrl = null, error = null) {
+
+  if (!MAKE_WEBHOOK_URL) {
+    console.log("MAKE_WEBHOOK_URL no configurado");
+    return;
+  }
+
+  try {
+
+    await axios.post(MAKE_WEBHOOK_URL, {
+      success: status === "completed",
+      job_id: jobId,
+      status: status,
+      image_url: imageUrl,
+      error: error
+    });
+
+    console.log(
+      `Make notificado | job ${jobId} | status ${status}`
+    );
+
+  } catch (notifyError) {
+
+    console.log(
+      `Error notificando a Make | job ${jobId} | ${notifyError.message}`
+    );
+
+  }
+
+}
+
+/* ===========================
+HEALTH CHECK
 =========================== */
 
 app.get("/", (req, res) => {
@@ -72,7 +109,7 @@ app.get("/", (req, res) => {
 });
 
 /* ===========================
-   START IMAGE JOB
+START IMAGE JOB
 =========================== */
 
 app.post("/enhance", async (req, res) => {
@@ -105,6 +142,7 @@ app.post("/enhance", async (req, res) => {
   });
 
   /* Respuesta inmediata */
+
   res.status(202).json({
     success: true,
     job_id: jobId,
@@ -112,7 +150,7 @@ app.post("/enhance", async (req, res) => {
   });
 
   /* ===========================
-     PROCESAMIENTO EN SEGUNDO PLANO
+  PROCESAMIENTO EN SEGUNDO PLANO
   =========================== */
 
   (async () => {
@@ -129,25 +167,32 @@ app.post("/enhance", async (req, res) => {
 
       logTime("Procesamiento iniciado");
 
-    logTime(`URL recibida: ${image_url}`);
+      logTime(`URL recibida: ${image_url}`);
 
-const response = await fetch(image_url, {
-  redirect: "follow",
-  headers: {
-    "User-Agent": "Mozilla/5.0"
-  }
-});
+      const response = await fetch(image_url, {
+        redirect: "follow",
+        headers: {
+          "User-Agent": "Mozilla/5.0"
+        }
+      });
 
-logTime(`Descarga HTTP status ${response.status}`);
-logTime(`Descarga HTTP content-type ${response.headers.get("content-type")}`);
+      logTime(`Descarga HTTP status ${response.status}`);
 
-if (!response.ok) {
-  throw new Error(`Descarga de imagen falló con HTTP ${response.status}`);
-}
+      logTime(
+        `Descarga HTTP content-type ${response.headers.get("content-type")}`
+      );
 
-const imageBuffer = Buffer.from(await response.arrayBuffer());
+      if (!response.ok) {
+        throw new Error(
+          `Descarga de imagen falló con HTTP ${response.status}`
+        );
+      }
 
-logTime("Imagen descargada");
+      const imageBuffer = Buffer.from(
+        await response.arrayBuffer()
+      );
+
+      logTime("Imagen descargada");
 
       const imageFile = await toFile(
         imageBuffer,
@@ -183,6 +228,13 @@ logTime("Imagen descargada");
 
       logTime("Trabajo completado");
 
+      await notifyMake(
+        jobId,
+        "completed",
+        uploadResult.secure_url,
+        null
+      );
+
     } catch (error) {
 
       logTime(`Error: ${error.message}`);
@@ -193,6 +245,13 @@ logTime("Imagen descargada");
         error: error.message
       });
 
+      await notifyMake(
+        jobId,
+        "failed",
+        null,
+        error.message
+      );
+
     }
 
   })();
@@ -200,7 +259,7 @@ logTime("Imagen descargada");
 });
 
 /* ===========================
-   CHECK JOB STATUS
+CHECK JOB STATUS
 =========================== */
 
 app.get("/enhance/status/:jobId", (req, res) => {
@@ -247,7 +306,7 @@ app.get("/enhance/status/:jobId", (req, res) => {
 });
 
 /* ===========================
-   SERVER
+SERVER
 =========================== */
 
 const PORT = process.env.PORT || 3000;
