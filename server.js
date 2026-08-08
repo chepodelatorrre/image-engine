@@ -27,7 +27,7 @@ const CONFIG = {
 
   MODEL: "gpt-image-1",
 
-ENHANCE_PROMPT: `
+  ENHANCE_PROMPT: `
 Improve the photographic quality while preserving the original image exactly.
 
 Never modify the identity, facial features, age, expression or body of any person.
@@ -62,27 +62,27 @@ app.get("/", (req, res) => {
 });
 
 app.post("/enhance", async (req, res) => {
-const start = Date.now();
+  const start = Date.now();
 
-const logTime = (mensaje) => {
-  console.log(`${Date.now() - start} ms | ${mensaje}`);
-};
+  const logTime = (mensaje) => {
+    console.log(`${Date.now() - start} ms | ${mensaje}`);
+  };
 
-logTime("POST /enhance recibido");
+  logTime("POST /enhance recibido");
 
-try {
+  try {
 
-const {
-  image_url,
-  mode = "enhance"
-} = req.body;
+    const {
+      image_url,
+      mode = "enhance"
+    } = req.body;
 
-if (!CONFIG.VALID_MODES.includes(mode)) {
-  return res.status(400).json({
-    success: false,
-    error: "Modo no válido"
-  });
-}
+    if (!CONFIG.VALID_MODES.includes(mode)) {
+      return res.status(400).json({
+        success: false,
+        error: "Modo no válido"
+      });
+    }
 
     if (!image_url) {
       return res.status(400).json({
@@ -92,54 +92,58 @@ if (!CONFIG.VALID_MODES.includes(mode)) {
     }
 
     const response = await axios.get(image_url, {
-      responseType: "arraybuffer"
+      responseType: "arraybuffer",
+      timeout: 10000
     });
 
     logTime("Imagen descargada");
 
-  const imageBuffer = Buffer.from(response.data);
+    const imageBuffer = Buffer.from(response.data);
 
-  const imageFile = await toFile(
-  imageBuffer,
-  CONFIG.INPUT_FILENAME,
-  {
-    type: CONFIG.INPUT_MIME_TYPE
-  }
-);
+    const imageFile = await toFile(
+      imageBuffer,
+      CONFIG.INPUT_FILENAME,
+      {
+        type: CONFIG.INPUT_MIME_TYPE
+      }
+    );
 
-  const result = await client.images.edit({
-  model: CONFIG.MODEL,
-  image: imageFile,
-  prompt: CONFIG.ENHANCE_PROMPT,
-});
+    const result = await client.images.edit({
+      model: CONFIG.MODEL,
+      image: imageFile,
+      prompt: CONFIG.ENHANCE_PROMPT,
+      quality: CONFIG.OUTPUT_QUALITY,
+    });
 
-logTime("OpenAI completado");
+    logTime("OpenAI completado");
 
-const uploadResult = await cloudinary.uploader.upload(
-  `data:image/png;base64,${result.data[0].b64_json}`,
-  {
-    folder: CONFIG.CLOUDINARY_FOLDER
-  }
-);
+    const uploadResult = await cloudinary.uploader.upload(
+      `data:image/png;base64,${result.data[0].b64_json}`,
+      {
+        folder: CONFIG.CLOUDINARY_FOLDER
+      }
+    );
 
-logTime("Cloudinary completado");
+    logTime("Cloudinary completado");
 
-logTime("Respuesta enviada");
+    logTime("Respuesta enviada");
 
-res.json({
-  success: true,
-  image_url: uploadResult.secure_url
-});
+    res.json({
+      success: true,
+      image_url: uploadResult.secure_url
+    });
 
   } catch (error) {
 
+    logTime(`Error: ${error.message}`);
+
     res.status(500).json({
-  success: false,
-  error: {
-    code: "INTERNAL_ERROR",
-    message: error.message
-  }
-});
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: error.message
+      }
+    });
 
   }
 });
