@@ -129,7 +129,9 @@ app.post("/enhance", async (req, res) => {
 
       logTime("Procesamiento iniciado");
 
-      const response = await fetch(image_url, {
+    logTime(`URL recibida: ${image_url}`);
+
+const response = await fetch(image_url, {
   redirect: "follow",
   headers: {
     "User-Agent": "Mozilla/5.0"
