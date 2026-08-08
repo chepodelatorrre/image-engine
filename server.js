@@ -131,8 +131,9 @@ app.post("/enhance", async (req, res) => {
 
     logTime(`URL recibida: ${image_url}`);
 
-const response = await fetch(image_url, {
-  redirect: "follow",
+const response = await fetch(
+  "https://drive.google.com/uc?id=1h9i2VM-aO2fTqnF_c1zQMwrO0bEWOGDZ&export=download",
+  {  redirect: "follow",
   headers: {
     "User-Agent": "Mozilla/5.0"
   }
