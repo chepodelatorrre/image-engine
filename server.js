@@ -132,6 +132,10 @@ app.post("/enhance", async (req, res) => {
       const response = await axios.get(image_url, {
   responseType: "arraybuffer",
   timeout: 10000,
+  maxRedirects: 10,
+  headers: {
+    "User-Agent": "Mozilla/5.0"
+  },
   validateStatus: () => true
 });
 
