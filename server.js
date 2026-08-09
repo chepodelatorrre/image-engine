@@ -27,34 +27,15 @@ const CONFIG = {
   MODEL: "gpt-image-1",
 
 ENHANCE_PROMPT: `
-Enhance the technical quality of the original photograph only.
+Improve the photographic quality while preserving the original image exactly.
 
-PRESERVE THE PERSON EXACTLY AS SHOWN IN THE SOURCE IMAGE.
-Do not regenerate, reconstruct, beautify, retouch, reshape or reinterpret the person's face.
-Do not change facial identity, facial structure, proportions, skin texture, skin tone, eyes, eyebrows, nose, mouth, lips, teeth, cheeks, jawline, chin, ears, hairline or hairstyle.
-Do not change age, expression, gaze, pose, body shape or physical appearance.
-Do not smooth or artificially perfect the skin.
-Do not make the person look younger, more attractive or different.
+Never modify the identity, facial features, age, expression or body of any person.
 
-The person's face and body must remain visually identical to the source photograph.
+Never add, remove or replace objects or scenery.
 
-ONLY improve technical photographic quality:
-- exposure
-- lighting balance
-- dynamic range
-- white balance
-- natural color
-- moderate sharpness
-- noise reduction
-- recovery of existing image detail
-- overall image clarity
+Improve only lighting, exposure, dynamic range, white balance, sharpness, noise reduction and natural colors.
 
-Do not invent details that are not present in the original.
-Do not add, remove, replace or alter objects, people or scenery.
-
-The result must look like the SAME photograph captured with a better camera and better processing, not like a newly generated or reconstructed photograph.
-
-If improving image quality conflicts with preserving the person's appearance, PRIORITIZE PRESERVING THE ORIGINAL PERSON.
+The output must remain a realistic professional photograph with no AI-generated appearance.
 `,
 
   VALID_MODES: [
@@ -159,6 +140,7 @@ app.post("/enhance", async (req, res) => {
       model: CONFIG.MODEL,
       image: imageFile,
       prompt: CONFIG.ENHANCE_PROMPT,
+      input_fidelity: "high",
       quality: CONFIG.OUTPUT_QUALITY,
     });
 
