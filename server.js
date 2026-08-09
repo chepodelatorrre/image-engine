@@ -2,7 +2,6 @@ const express = require("express");
 const OpenAI = require("openai");
 const { toFile } = require("openai/uploads");
 const { v2: cloudinary } = require("cloudinary");
-const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
@@ -58,49 +57,6 @@ The output must remain a realistic professional photograph with no AI-generated 
 };
 
 /* ===========================
-TEMPORARY JOB STORAGE
-=========================== */
-
-const jobs = new Map();
-
-/* ===========================
-MAKE WEBHOOK NOTIFICATION
-=========================== */
-
-const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
-
-async function notifyMake(jobId, status, imageUrl = null, error = null) {
-
-  if (!MAKE_WEBHOOK_URL) {
-    console.log("MAKE_WEBHOOK_URL no configurado");
-    return;
-  }
-
-  try {
-
-    await axios.post(MAKE_WEBHOOK_URL, {
-      success: status === "completed",
-      job_id: jobId,
-      status: status,
-      image_url: imageUrl,
-      error: error
-    });
-
-    console.log(
-      `Make notificado | job ${jobId} | status ${status}`
-    );
-
-  } catch (notifyError) {
-
-    console.log(
-      `Error notificando a Make | job ${jobId} | ${notifyError.message}`
-    );
-
-  }
-
-}
-
-/* ===========================
 HEALTH CHECK
 =========================== */
 
@@ -133,175 +89,91 @@ app.post("/enhance", async (req, res) => {
     });
   }
 
-  const jobId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const start = Date.now();
 
-  jobs.set(jobId, {
-    status: "processing",
-    image_url: null,
-    error: null
-  });
+  const logTime = (mensaje) => {
+    console.log(
+      `${Date.now() - start} ms | ${mensaje}`
+    );
+  };
 
-  /* Respuesta inmediata */
+  try {
 
-  res.status(202).json({
-    success: true,
-    job_id: jobId,
-    status: "processing"
-  });
+    logTime("Procesamiento iniciado");
 
-  /* ===========================
-  PROCESAMIENTO EN SEGUNDO PLANO
-  =========================== */
+    logTime(`URL recibida: ${image_url}`);
 
-  (async () => {
-
-    const start = Date.now();
-
-    const logTime = (mensaje) => {
-      console.log(
-        `${Date.now() - start} ms | ${mensaje} | job ${jobId}`
-      );
-    };
-
-    try {
-
-      logTime("Procesamiento iniciado");
-
-      logTime(`URL recibida: ${image_url}`);
-
-      const response = await fetch(image_url, {
-        redirect: "follow",
-        headers: {
-          "User-Agent": "Mozilla/5.0"
-        }
-      });
-
-      logTime(`Descarga HTTP status ${response.status}`);
-
-      logTime(
-        `Descarga HTTP content-type ${response.headers.get("content-type")}`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Descarga de imagen falló con HTTP ${response.status}`
-        );
+    const response = await fetch(image_url, {
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0"
       }
+    });
 
-      const imageBuffer = Buffer.from(
-        await response.arrayBuffer()
+    logTime(`Descarga HTTP status ${response.status}`);
+
+    logTime(
+      `Descarga HTTP content-type ${response.headers.get("content-type")}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Descarga de imagen falló con HTTP ${response.status}`
       );
-
-      logTime("Imagen descargada");
-
-      const imageFile = await toFile(
-        imageBuffer,
-        CONFIG.INPUT_FILENAME,
-        {
-          type: CONFIG.INPUT_MIME_TYPE
-        }
-      );
-
-      const result = await client.images.edit({
-        model: CONFIG.MODEL,
-        image: imageFile,
-        prompt: CONFIG.ENHANCE_PROMPT,
-        quality: CONFIG.OUTPUT_QUALITY,
-      });
-
-      logTime("OpenAI completado");
-
-      const uploadResult = await cloudinary.uploader.upload(
-        `data:image/png;base64,${result.data[0].b64_json}`,
-        {
-          folder: CONFIG.CLOUDINARY_FOLDER
-        }
-      );
-
-      logTime("Cloudinary completado");
-
-      jobs.set(jobId, {
-        status: "completed",
-        image_url: uploadResult.secure_url,
-        error: null
-      });
-
-      logTime("Trabajo completado");
-
-      await notifyMake(
-        jobId,
-        "completed",
-        uploadResult.secure_url,
-        null
-      );
-
-    } catch (error) {
-
-      logTime(`Error: ${error.message}`);
-
-      jobs.set(jobId, {
-        status: "failed",
-        image_url: null,
-        error: error.message
-      });
-
-      await notifyMake(
-        jobId,
-        "failed",
-        null,
-        error.message
-      );
-
     }
 
-  })();
+    const imageBuffer = Buffer.from(
+      await response.arrayBuffer()
+    );
 
-});
+    logTime("Imagen descargada");
 
-/* ===========================
-CHECK JOB STATUS
-=========================== */
+    const imageFile = await toFile(
+      imageBuffer,
+      CONFIG.INPUT_FILENAME,
+      {
+        type: CONFIG.INPUT_MIME_TYPE
+      }
+    );
 
-app.get("/enhance/status/:jobId", (req, res) => {
-
-  const jobId = req.params.jobId;
-
-  const job = jobs.get(jobId);
-
-  if (!job) {
-    return res.status(404).json({
-      success: false,
-      error: "Trabajo no encontrado"
+    const result = await client.images.edit({
+      model: CONFIG.MODEL,
+      image: imageFile,
+      prompt: CONFIG.ENHANCE_PROMPT,
+      quality: CONFIG.OUTPUT_QUALITY,
     });
-  }
 
-  if (job.status === "processing") {
+    logTime("OpenAI completado");
 
-    return res.json({
+    const uploadResult = await cloudinary.uploader.upload(
+      `data:image/png;base64,${result.data[0].b64_json}`,
+      {
+        folder: CONFIG.CLOUDINARY_FOLDER
+      }
+    );
+
+    logTime("Cloudinary completado");
+
+    logTime("Trabajo completado");
+
+    return res.status(200).json({
       success: true,
-      job_id: jobId,
-      status: "processing"
+      status: "completed",
+      image_url: uploadResult.secure_url
     });
 
-  }
+  } catch (error) {
 
-  if (job.status === "failed") {
+    logTime(`Error: ${error.message}`);
 
     return res.status(500).json({
       success: false,
-      job_id: jobId,
       status: "failed",
-      error: job.error
+      image_url: null,
+      error: error.message
     });
 
   }
-
-  return res.json({
-    success: true,
-    job_id: jobId,
-    status: "completed",
-    image_url: job.image_url
-  });
 
 });
 
